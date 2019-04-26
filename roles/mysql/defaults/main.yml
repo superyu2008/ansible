@@ -10,7 +10,7 @@ MYSQL_BACKUP_DIR: "/data/mysql_{{ MYSQL_PORT }}/backup"
 MYSQL_DUMPS_DIR:  "/data/mysql_{{ MYSQL_PORT }}/dumps"
 
 default_user: 'galaxy'
-default_pass: 'Galaxy123'
+default_pass: 'galaxy'
 repl_user: 'repl'
 repl_pass: 'repl'
 
