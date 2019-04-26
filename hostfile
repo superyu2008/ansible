@@ -1,0 +1,27 @@
+[mysqldb:children]
+mysqldb_master
+mysqldb_slave
+
+[mysqldb_master]
+192.168.100.5
+
+[mysqldb_slave]
+192.168.100.7
+
+# 计算控制节点（keystone, nova, cinder-api, glance）
+# ！！ cinder-volume不要写control里 ！！
+[control]
+192.168.100.5
+192.168.100.7
+
+
+# cinder-volume EBS2.0 存储节点，与EBS人员确认已安装gw
+[volume2]
+#192.168.100.3
+
+# cinder-volume EBS3.0 存储节点，与EBS人员确认已安装gw
+[volume3]
+192.168.0.12
+
+[compute]
+192.168.0.18
