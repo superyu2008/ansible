@@ -1,0 +1,93 @@
+---
+
+- name: install   copy_mysql_tar
+  unarchive: src=files/{{ MYSQL_FILE }} dest=/tmp copy=yes
+  tags: init,copy_tar
+
+- name: install   install_requires 
+  yum:  name={{ item }} state=installed disable_gpg_check=yes
+  with_items:
+    - "cmake"
+    - "perl-devel"
+    - "autoconf"
+    - "libaio"
+    - "git"
+    - "gcc"
+    - "gcc-c++"
+    - "ncurses-devel"
+    - "bison-devel"
+    - "libtool"
+    - "openssl-devel"
+    - "MySQL-python"
+  tags: init,install_requires
+
+- name: install   system_group 
+  user: name=mysql state=present
+  tags: init,system_group
+
+- name: install   system_user 
+  user: name=mysql shell=/usr/sbin/nologin state=present
+  tags: init,system_user
+
+- name: install   mkdirs 
+  file: name={{ item }} state=directory group=mysql owner=mysql
+  with_items:
+    - "{{ MYSQL_BASE_DIR }}"
+    - "{{ MYSQL_CONF_DIR  }}"
+    - "{{ MYSQL_DATA_DIR }}"
+    - "{{ MYSQL_LOG_DIR }}"
+    - "{{ MYSQL_TMP_DIR }}"
+    - "{{ MYSQL_BACKUP_DIR }}"
+    - "{{ MYSQL_DUMPS_DIR }}"
+  tags: mkdirs
+
+- name: install   cp_make_shell
+  template: src=make_mysql.sh.jn2 dest=/tmp/mysql-{{ VERSION }}/make_mysql.sh mode=755
+  tags: init,cp_make_shell
+  
+- name: install   make_mysql
+  shell: ./make_mysql.sh > /tmp/deploy_mysql.log 2>&1  chdir=/tmp/mysql-{{ VERSION }}
+  tags: init,make_install
+
+- name: link_command
+  file: src=/usr/local/mysql/bin/mysql dest=/usr/bin/mysql state=link
+  tags: link_command
+
+- name: install   cp_conf 
+  template: src=my_5.6.cnf.jn2 dest={{ MYSQL_CONF_DIR }}/my_{{ MYSQL_PORT }}.cnf group=mysql owner=mysql backup=yes
+  tags: cp_conf
+
+- name: install   install_db 
+  shell: "{{ MYSQL_BASE_DIR }}/scripts/mysql_install_db --user=mysql --basedir={{ MYSQL_BASE_DIR }} --datadir={{ MYSQL_DATA_DIR }}"
+  tags : install_db
+  
+- name: install   cp_init 
+  template: src=mysql_init.jn2 dest=/etc/init.d/mysqld{{ MYSQL_PORT }} mode=0755 backup=yes
+  tags: cp_init
+  
+- name: install   start_db 
+  service: name=mysqld{{ MYSQL_PORT }} state=started enabled=yes
+  tags: start_db
+
+- wait_for: port={{ MYSQL_PORT }} state=started
+  tags: wait_port
+
+- name: install   create default user galaxy 
+  mysql_user:
+      login_host: localhost
+      login_unix_socket: "{{ MYSQL_TMP_DIR }}/mysql.sock"
+      name: "{{ default_user }}"
+      password: "{{ default_pass }}" 
+      #host: '10.%'
+      host: "{{ ansible_all_ipv4_addresses[0].split('.')[0] }}.%"
+      state: present
+      priv: '*.*:ALL,GRANT'
+  tags: default_user
+
+- name: install alias
+  lineinfile: 
+    dest: /etc/bashrc
+    line: | 
+      alias mysql{{ MYSQL_PORT }}="{{ MYSQL_BASE_DIR }}/bin/mysql -S {{ MYSQL_TMP_DIR }}/mysql.sock"
+      export PATH=$PATH:/usr/local/mysql/bin
+  tags: alias

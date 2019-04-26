@@ -1,0 +1,54 @@
+---
+
+- name: Ensure replication user exists
+  mysql_user:
+    login_host: localhost
+    login_unix_socket: "{{ MYSQL_TMP_DIR }}/mysql.sock"
+
+    name: "{{ repl_user }}"
+    host: "{{ ansible_all_ipv4_addresses[0].split('.')[0] }}.%"
+    password: "{{ repl_pass }}"
+    priv: '*.*:REPLICATION SLAVE,REPLICATION CLIENT'
+    state: present
+  tags: "repl_user"
+
+- name: get master status from slave.
+  mysql_replication:
+    mode: getmaster
+    login_host: "{{ groups['mysqldb_master'][0] }}"
+    login_user: "{{ repl_user }}"
+    login_password: "{{ repl_pass }}"
+  ignore_errors: true
+  register: master_info
+  when: "'mysqldb_slave' is defined and 'mysqldb_slave' in group_names"
+  tags: "get_master_stat"
+
+- name: debug
+  debug: msg="{{ master_info }}"
+  tags: debug
+
+- name: Configure replication on the slave.
+  mysql_replication:
+    login_host: "{{ groups['mysqldb_slave'][0] }}"
+    login_port: "{{ MYSQL_PORT }}"
+    login_user: "{{ default_user }}"
+    login_password: "{{ default_pass }}"
+    mode: changemaster
+    master_host: "{{ groups['mysqldb_master'][0] }}"
+    master_port: "{{ MYSQL_PORT }}"
+    master_user: "{{ repl_user }}"
+    master_password: "{{ repl_pass }}"
+    master_log_file: "{{ master_info.File }}"
+    master_log_pos: "{{ master_info.Position }}"
+  ignore_errors: true
+  when: "'mysqldb_slave' is defined and 'mysqldb_slave' in group_names" 
+  tags: "cfg_slave"
+
+- name: Start replication.
+  mysql_replication:
+    login_host: "{{ groups['mysqldb_slave'][0] }}"
+    login_user: "{{ default_user }}"
+    login_password: "{{ default_pass }}"
+    mode: startslave
+  when: "'mysqldb_slave' is defined and 'mysqldb_slave' in group_names"
+  tags: "start_slave"

@@ -1,0 +1,17 @@
+# 银河数据库安装工具，根据DBA脚本转换
+
+变量文件： mysql/defaults/main.yml
+步骤
+
+1、 vim hostfile
+将主库和从库的ip写入对应段
+
+2、 安装软件、创建3306库
+ansible-playbook -i hostfile mysql.yml -v
+
+3、 创建其他数据库
+ansible-playbook -i hostfile mysql.yml --skip-tags="init"  -e MYSQL_PORT=3309 -v
+ansible-playbook -i hostfile mysql.yml --skip-tags="init"  -e MYSQL_PORT=3310 -v
+ansible-playbook -i hostfile mysql.yml --skip-tags="init"  -e MYSQL_PORT=3311 -v
+ansible-playbook -i hostfile mysql.yml --skip-tags="init"  -e MYSQL_PORT=3313 -v
+ansible-playbook -i hostfile mysql.yml --skip-tags="init"  -e MYSQL_PORT=3316 -v

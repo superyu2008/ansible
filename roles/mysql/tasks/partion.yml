@@ -1,0 +1,11 @@
+---
+
+- name: '检查分区'
+  parted: device=/dev/{{ item.key }} number=1 state=present
+  when: not item.value.partitions
+  register: status
+  with_dict: "{{ ansible_devices }}" 
+  tags: check_partitions
+
+- debug: var=status
+  tags: stdout_partitions

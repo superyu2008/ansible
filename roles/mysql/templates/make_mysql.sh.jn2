@@ -1,0 +1,16 @@
+#!/bin/bash
+
+/usr/bin/cmake -DCMAKE_INSTALL_PREFIX={{ MYSQL_BASE_DIR }} \
+-DMYSQL_DATADIR={{ MYSQL_DATA_DIR }} \
+-DDEFAULT_CHARSET=utf8 \
+-DDEFAULT_COLLATION=utf8_unicode_ci \
+-DWITH_READLINE=1 \
+-DWITH_SSL=system \
+-DWITH_EMBEDDED_SERVER=1 \
+-DENABLED_LOCAL_INFILE=1 \
+-DWITH_MYISAM_STORAGE_ENGINE=1 \
+-DWITH_INNOBASE_STORAGE_ENGINE=1 \
+-DWITH_DEBUG=0
+
+CPU_NUMS=$(cat /proc/cpuinfo |grep processor |wc -l)
+make -j $CPU_NUMS && make install
